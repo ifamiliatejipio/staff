@@ -507,8 +507,10 @@
 
   const opcoesPorTipo = {
     domingo: ['10h', '15h', '17h', '19h'],
-    uncao: ['Terça', 'Quarta', 'Quinta']
+    uncao: ['Terça', 'Quarta', 'Quinta'],
+    especial: ['Volta de ECD', 'Celebração de Redes', 'Outro']
   };
+  const OPCAO_OUTRO = 'Outro';
   const nomeTipo = {
     domingo: 'Domingo',
     uncao: 'Noite da Unção'
@@ -528,36 +530,43 @@
 
       cultoOpcaoSeg.innerHTML = '';
 
+      let nomeInput = null;
       if (tipo === 'especial') {
-        const nomeInput = document.createElement('input');
+        nomeInput = document.createElement('input');
         nomeInput.type = 'text';
         nomeInput.className = 'name-input';
         nomeInput.placeholder = 'Digite o nome do culto...';
+        nomeInput.style.display = 'none';
         nomeInput.addEventListener('input', () => {
           const val = nomeInput.value.trim();
           culto.opcao = val || null;
           updateProgress();
           saveState();
         });
-        cultoOpcaoSeg.appendChild(nomeInput);
-        cultoOpcaoSeg.style.display = 'block';
-      } else {
-        opcoesPorTipo[tipo].forEach(op => {
-          const opBtn = document.createElement('button');
-          opBtn.type = 'button';
-          opBtn.className = 'seg-btn';
-          opBtn.textContent = op;
-          opBtn.addEventListener('click', () => {
-            culto.opcao = op;
-            cultoOpcaoSeg.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-            opBtn.classList.add('active');
-            updateProgress();
-            saveState();
-          });
-          cultoOpcaoSeg.appendChild(opBtn);
-        });
-        cultoOpcaoSeg.style.display = 'flex';
       }
+      opcoesPorTipo[tipo].forEach(op => {
+        const opBtn = document.createElement('button');
+        opBtn.type = 'button';
+        opBtn.className = 'seg-btn';
+        opBtn.textContent = op;
+        opBtn.addEventListener('click', () => {
+          cultoOpcaoSeg.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+          opBtn.classList.add('active');
+          if (nomeInput && op === OPCAO_OUTRO) {
+            nomeInput.style.display = 'block';
+            culto.opcao = nomeInput.value.trim() || null;
+            nomeInput.focus();
+          } else {
+            if (nomeInput) nomeInput.style.display = 'none';
+            culto.opcao = op;
+          }
+          updateProgress();
+          saveState();
+        });
+        cultoOpcaoSeg.appendChild(opBtn);
+      });
+      if (nomeInput) cultoOpcaoSeg.appendChild(nomeInput);
+      cultoOpcaoSeg.style.display = 'flex';
       updateProgress();
       saveState();
     });
@@ -898,16 +907,18 @@
         if (tipoBtn) {
           tipoBtn.click();
           if (saved.culto.opcao) {
-            if (saved.culto.tipo === 'especial') {
+            const btns = Array.from(cultoOpcaoSeg.querySelectorAll('.seg-btn'));
+            const opBtn = btns.find(b => b.textContent === saved.culto.opcao && b.textContent !== OPCAO_OUTRO);
+            if (opBtn) {
+              opBtn.click();
+            } else if (saved.culto.tipo === 'especial') {
+              const outroBtn = btns.find(b => b.textContent === OPCAO_OUTRO);
               const input = cultoOpcaoSeg.querySelector('input');
-              if (input) {
+              if (outroBtn && input) {
+                outroBtn.click();
                 input.value = saved.culto.opcao;
                 input.dispatchEvent(new Event('input'));
               }
-            } else {
-              const opBtn = Array.from(cultoOpcaoSeg.querySelectorAll('.seg-btn'))
-                .find(b => b.textContent === saved.culto.opcao);
-              if (opBtn) opBtn.click();
             }
           }
         }
